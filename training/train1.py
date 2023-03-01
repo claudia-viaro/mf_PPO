@@ -14,11 +14,11 @@ from utils import plot1, plot2, save_model, save_plots, SaveBestModel, get_count
 from running_state import *
 from replay_memory import *
 import sys
-sys.path.append('C:/Users/cvcla/my_py_projects/toy_game')
+sys.path.append('C:/Users/cvcla/my_py_projects/toy_environment')
 from wrapper import BasicWrapper
 sys.path.append('C:/Users/cvcla/my_py_projects/ModelFree/PPO_2/utils')
 from logger import Logger
-sys.path.append('C:/Users/cvcla/my_py_projects/GP_intervention')
+sys.path.append('C:/Users/cvcla/my_py_projects/GP_transition')
 from derivate import Derivate
 
 

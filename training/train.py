@@ -12,8 +12,6 @@ from utils import plot1, plot2, save_model, save_plots, SaveBestModel, get_count
 from running_state import *
 from replay_memory import *
 
-
-# https://github.com/Abhipanda4/PPO-PyTorch/blob/master/environment.py
 import sys
 sys.path.append('C:/Users/cvcla/my_py_projects/toy_game')
 from wrapper import BasicWrapper
