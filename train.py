@@ -5,7 +5,6 @@ import pickle
 import numpy as np
 
 from constants import *
-from environment_game import Game
 from model import Actor, Critic
 from ppo import PPO
 from utils import plot1, plot2, save_model, save_plots, SaveBestModel, get_count
@@ -15,8 +14,6 @@ from replay_memory import *
 import sys
 sys.path.append('C:/Users/cvcla/my_py_projects/toy_game')
 from wrapper import BasicWrapper
-sys.path.append('C:/Users/cvcla/my_py_projects/ModelFree/PPO_2/utils')
-from logger import Logger
 
 
 def main(args):
