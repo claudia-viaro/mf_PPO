@@ -58,3 +58,87 @@ class Critic(nn.Module):
         return state_val
 
 
+"""
+Model definitions.
+These are modified versions of the models from
+https://github.com/ikostrikov/pytorch-a2c-ppo-acktr-gail/blob/master/a2c_ppo_acktr/model.py
+"""
+import numpy as np
+
+
+
+def init(module, weight_init, bias_init, gain=1):
+    """Helper to initialize a layer weight and bias."""
+    weight_init(module.weight.data, gain=gain)
+    bias_init(module.bias.data)
+    return module
+
+
+class MLPBase(nn.Module):
+    """Basic multi-layer linear model."""
+    def __init__(self, num_inputs, num_outputs, dist, hidden_size=64):
+        super().__init__()
+
+        init_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.
+                               constant_(x, 0), np.sqrt(2))
+
+        init2_ = lambda m: init(m, nn.init.orthogonal_, lambda x: nn.init.
+                               constant_(x, 0))
+
+        self.actor = nn.Sequential(
+            init_(nn.Linear(num_inputs, hidden_size)), nn.Tanh(),
+            init_(nn.Linear(hidden_size, hidden_size)), nn.Tanh(),
+            init2_(nn.Linear(hidden_size, num_outputs)))
+
+        self.critic = nn.Sequential(
+            init_(nn.Linear(num_inputs, hidden_size)), nn.Tanh(),
+            init_(nn.Linear(hidden_size, hidden_size)), nn.Tanh(),
+            init_(nn.Linear(hidden_size, 1)))
+
+        self.dist = dist
+
+    def forward(self, x):
+        value = self.critic(x)
+        action_logits = self.actor(x)
+        return value, self.dist(action_logits)
+
+
+class Discrete(nn.Module):
+    """A module that builds a Categorical distribution from logits."""
+    def __init__(self, num_outputs):
+        super().__init__()
+
+    def forward(self, x):
+        # Do softmax on the proper dimesion with either batched or non
+        # batched inputs
+        if len(x.shape) == 3:
+            probs = nn.functional.softmax(x, dim=2)
+        elif len(x.shape) == 2:
+            probs = nn.functional.softmax(x, dim=1)
+        else:
+            print(x.shape)
+            raise
+        dist = torch.distributions.Categorical(probs=probs)
+        return dist
+
+
+class Normal(nn.Module):
+    """A module that builds a Diagonal Gaussian distribution from means.
+    Standard deviations are learned parameters in this module.
+    """
+    def __init__(self, num_outputs):
+        super().__init__()
+        # initial variance is e^0 = 1
+        self.stds = nn.Parameter(torch.zeros(num_outputs))
+
+    def forward(self, x):
+        dist = torch.distributions.Normal(loc=x, scale=self.stds.exp())
+
+        # By default we get the probability of sampling each dimension of the
+        # distribution. The full probability is the product of these, or
+        # the sum since we're working with log probabilities.
+        # So overwrite the log_prob function to handle this for us
+        dist.old_log_prob = dist.log_prob
+        dist.log_prob = lambda x: dist.old_log_prob(x).sum(-1)
+
+        return dist
