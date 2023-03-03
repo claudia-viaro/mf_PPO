@@ -52,7 +52,7 @@ def get_args():
     parser.add_argument('--tau', type=float, default=0.97, help='soft update rule for target netwrok(default: 0.001)')
 
     parser.add_argument('--n-episodes', type=int, default=30, help="number of episodes to train")
-    parser.add_argument('--batch-size', type=int, default=100, help="number of hidden units in models of actor & critic")
+    parser.add_argument('--batch-size', type=int, default=10, help="number of hidden units in models of actor & critic")
     parser.add_argument('--log-steps', type=int, default=10, help="interval of steps after which statistics should be printed")
     parser.add_argument('--save-steps', type=int, default=20, help="interval of steps after which models should be saved")
     parser.add_argument('--n-hidden', type=int, default=64, help="number of hidden units in models of actor & critic")
@@ -63,19 +63,22 @@ def get_args():
 
     parser.add_argument('--checkpoint-interval', type=int, default=1e5, help="when to save the models") #1e5
     parser.add_argument('--out', type=str, default='/tmp/ppo/models/')
-    #parser.add_argument('--log-dir', type=str, default="/tmp/ppo/logs/")
     parser.add_argument('--reset-dir', action='store_true', help="give this argument to delete the existing logs for the current set of parameters")
-
-    parser.add_argument("--logdir", type=str, default="log")
+    parser.add_argument('--test-interval', type=int, default=10)
+    parser.add_argument('--domain-name', type=str, default='model')
+    parser.add_argument("--log-dir", type=str, default="log")
     parser.add_argument("--config_name", type=str, default="model_update")
     parser.add_argument("--strategy", type=str, default="information")
     parser.add_argument("--seed", type=int, default=0)
-    
-    parser.add_argument('--buffer-capacity', type=int, default=8) # 1000000 64
+    parser.add_argument('--value_loss_coef', default=.5, type=float)
+    parser.add_argument('--entropy_coef', default=.01, type=float)
+    parser.add_argument('--buffer-capacity', type=int, default=64) # 1000000 64
     parser.add_argument('-S', '--seed-episodes', type=int, default=5)
-    parser.add_argument('--all-episodes', type=int, default=7) # 1000
+    parser.add_argument('--task-name', type=str, default='run')
+    parser.add_argument('--all-episodes', type=int, default=20) # 1000
     parser.add_argument('--action-noise-var', type=float, default=0.3)
-    parser.add_argument('-C', '--collect-interval', type=int, default=2) # 100
+    parser.add_argument('-L', '--chunk-length', type=int, default=10) #50, 10
+    parser.add_argument('-C', '--collect-interval', type=int, default=100) # 100
     parser.add_argument(
         '--alpha',
         type=float,

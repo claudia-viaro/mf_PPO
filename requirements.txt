@@ -1,1 +1,11 @@
 ###### Requirements without Version Specifiers ######
+
+torch
+os
+time
+pickle
+numpy
+datetime
+json
+copy
+scikit-learn

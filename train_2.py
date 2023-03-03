@@ -1,5 +1,5 @@
 '''
-1 episode n trajectories always staring from the same initial state
+include gp
 
 '''
 
@@ -13,8 +13,7 @@ import os
 import pickle
 import numpy as np
 from constants import *
-from environment_game import Game
-from model import Actor, Critic
+from model import MLPBase, Actor, Critic
 from ppo import PPO
 from utils import plot1, plot2, save_model, save_plots, SaveBestModel, get_count
 from running_state import *
@@ -24,8 +23,9 @@ sys.path.append('C:/Users/cvcla/my_py_projects/toy_game')
 from wrapper import BasicWrapper
 sys.path.append('C:/Users/cvcla/my_py_projects/ModelFree/PPO_2/utils')
 from logger import Logger
-sys.path.append('C:/Users/cvcla/my_py_projects/GP_intervention')
+sys.path.append('C:/Users/cvcla/my_py_projects/GP_transition')
 from derivate import Derivate
+
 
 
 def main(args):
@@ -40,6 +40,7 @@ def main(args):
 
     actor = Actor(env.observation_size, env.action_size, args.n_hidden)
     critic = Critic(env.observation_size, args.n_hidden)    
+    MLPBase_model = MLPBase(env.observation_size, env.action_size, env.action_size) #what 3rd arg?
     
     replay_buffer = ReplayBuffer(capacity=args.buffer_capacity,
                                  observation_shape= env.observation_size,
@@ -50,7 +51,7 @@ def main(args):
         'val_loss': [],
         'policy_loss': [],
     }
-    ppo_agent = PPO(env, args, actor, critic) 
+    ppo_agent = PPO(env, args, actor, critic, MLPBase_model) 
     # collect initial experience with random action
     for episode in range(args.seed_episodes): #5 episodes
             print("collecting experience", episode)
@@ -94,7 +95,7 @@ def main(args):
         print('episode [%4d/%4d] is collected. Mean reward is %f' % (episode+1, args.all_episodes, mean_rew))
         print('elasped time for interaction: %.2fs' % (time.time() - start))
         
-
+        '''
         # update model parameters
         start = time.time()
         for update_step in range(args.collect_interval): #100 steps
@@ -118,8 +119,9 @@ def main(args):
             total_update_step = episode * args.collect_interval + update_step
         print('elasped time for update: %.2fs' % (time.time() - start))
         print("(episode + 1) % args.test_interval", (episode + 1) % args.test_interval)
-
+        '''
 if __name__ == "__main__":
 
     args = get_args()
+    args.log_dir = "train_2"
     main(args)
