@@ -83,7 +83,15 @@ def main(args):
             A = A.detach().numpy()
             A += np.random.normal(0, np.sqrt(args.action_noise_var),
                                         env.action_size)
-            S_prime, R, pat, s_LogReg, r_LogReg, Xa_pre, Xa_post, outcome, is_done = env.step(A, S.detach().numpy())
+            
+
+            if count_iter == 1:
+                 S_prime, R, pat, s_LogReg, r_LogReg, Xa_pre, Xa_post, outcome, is_done = env.step(A, S.detach().numpy())
+            else:
+                 
+                 # here we need to add the GP transition
+                 pass
+            
             replay_buffer.push(S, A, R, is_done, mask)
             if is_done:
                     done = True                    

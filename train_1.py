@@ -36,7 +36,7 @@ def main(args):
     actor = Actor(env.observation_size, env.action_size, args.n_hidden)
     critic = Critic(env.observation_size, args.n_hidden)  
     MLPBase_model = MLPBase(env.observation_size, env.action_size, env.action_size) #what 3rd arg?
-    GP_transition = StepGP(args, kernel_choice = linear) 
+    #GP_transition = StepGP(args, kernel_choice = linear) 
     
     replay_buffer = ReplayBuffer(capacity=args.buffer_capacity,
                                  observation_shape= env.observation_size,
@@ -62,25 +62,23 @@ def main(args):
 
     # main training
     for episode in range(args.seed_episodes, args.all_episodes):
-        start = time.time()         
+        print("episode", episode)
+        #start = time.time()         
         patients, S = env.reset() 
+
         
         done = False
         total_reward = 0
         count_iter = 0
         while not done:
             count_iter +=1 # count transitions in a trajectory
+            
             A = ppo_agent.select_best_action(S)
             A = A.detach().numpy()
             A += np.random.normal(0, np.sqrt(args.action_noise_var),
                                         env.action_size)
-            
-            if count_iter == 1:
-                 S_prime, R, pat, s_LogReg, r_LogReg, Xa_pre, Xa_post, outcome, is_done = env.step(A, S.detach().numpy())
-            else:
-                 
-                 # here we need to add the GP transition
-                 pass
+            S_prime, R, pat, s_LogReg, r_LogReg, Xa_pre, Xa_post, outcome, is_done = env.step(A, S.detach().numpy())
+
 
             replay_buffer.push(S, A, R, is_done, mask)
             if is_done:

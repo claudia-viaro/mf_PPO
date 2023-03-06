@@ -78,7 +78,7 @@ def get_args():
     parser.add_argument('--all-episodes', type=int, default=20) # 1000
     parser.add_argument('--action-noise-var', type=float, default=0.3)
     parser.add_argument('-L', '--chunk-length', type=int, default=10) #50, 10
-    parser.add_argument('-C', '--collect-interval', type=int, default=100) # 100
+    parser.add_argument('-C', '--collect-interval', type=int, default=10) # 100
     parser.add_argument(
         '--alpha',
         type=float,
