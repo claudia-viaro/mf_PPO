@@ -16,14 +16,14 @@ from utils import plot1, plot2, save_model, save_plots, SaveBestModel, get_count
 from running_state import *
 from replay_memory import *
 from GP_step import StepGP
-from logger import Logger
+from logger.logger import Logger
 
 import sys
 sys.path.append('C:/Users/cvcla/my_py_projects/toy_game')
 from wrapper import BasicWrapper
 
 
-def main(args):
+def main(args, logger):
 
     
 
@@ -64,7 +64,7 @@ def main(args):
         #start = time.time()         
         patients, S = env.reset()         
         done = False
-        total_reward = 0; count_iter = 0
+        total_reward = 0; total_rewardLR = 0; count_iter = 0
         while not done:
             count_iter +=1 # count transitions in a trajectory
             
@@ -72,7 +72,7 @@ def main(args):
             A = A.detach().numpy()
             A += np.random.normal(0, np.sqrt(args.action_noise_var),
                                         env.action_size)
-            S_prime, R, pat, s_LogReg, r_LogReg, Xa_pre, Xa_post, outcome, is_done = env.step(A, S.detach().numpy())
+            S_prime, R, pat, s_LogReg, r_LogReg, Xa_pre, Xa_post, outcome, done = env.step(A, S.detach().numpy())
 
 
             replay_buffer.push(S, A, R, is_done, mask)
@@ -81,13 +81,10 @@ def main(args):
             total_reward += R; total_rewardLR += r_LogReg
             
             
-            if is_done:
-                    done = True    
-                    mean_rew = total_reward/count_iter; mean_rewardLR = total_rewardLR/count_iter    
-                    logger.log_episode(mean_rew, mean_rewardLR)             
-                    break
+        mean_rew = total_reward/count_iter; mean_rewardLR = total_rewardLR/count_iter    
+        logger.log_episode(episode+1, args.all_episodes, mean_rew, mean_rewardLR, count_iter)             
 
-        print('episode [%4d/%4d] is collected. Mean reward is %f' % (episode+1, args.all_episodes, mean_rew))
+        #print('episode [%4d/%4d] is collected. Mean reward is %f' % (episode+1, args.all_episodes, mean_rew))
         #print('elasped time for interaction: %.2fs' % (time.time() - start))
         
 

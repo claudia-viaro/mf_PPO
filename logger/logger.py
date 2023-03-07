@@ -37,13 +37,13 @@ class Logger(object):
         self.metrics["e_Alosses"].extend(actor_loss)
 
     # log at the end of each episode, number of steps in an episode
-    def log_episode(self, reward, LR_reward, steps):
+    def log_episode(self, ep, tot_episodes, reward, LR_reward, steps):
         self.metrics["mean_rewards"].append(reward)
         self.metrics["mean_LR_reward"].append(LR_reward)
 
         self.metrics["steps"].append(steps)
-        msg = "Steps {:.2f} / Mean Rewards {:.2f}, Mean LR Rewards {:.2f}" 
-        self.log(msg.format(steps, reward, LR_reward))
+        msg = "episode [%4d/%4d] is collected. Mean Rewards {:.2f}, Mean LR Rewards {:.2f} over %4d transiitons" 
+        self.log(msg.format(ep, tot_episodes, reward, LR_reward, steps))
     
     # log at the end of each episode and end of update (losses), number of update steps 
     def log_update(self, policy_loss, value_loss):
@@ -85,16 +85,16 @@ class Logger(object):
     def _setup_metrics(self):
         self.metrics = {
             # record losses - mean episode and the entire sequence in an episode
-            "e_Closses": [],
-            "e_Alosses": [],
-            "mean_Closses": [],
-            "mean_Alosses": [],
+            "e_Plosses": [],
+            "e_Llosses": [],
+            "mean_Plosses": [],
+            "mean_Vlosses": [],
             
             # record rewards - mean episode and the entire sequence in an episode
             "e_rewards": [],
             "e_rewardsLR": [],
             "mean_rewards": [],
-            "mean_rewardsLR": [],
+            "mean_LR_reward": [],
 
             # others
             "steps": [],
