@@ -16,6 +16,7 @@ from utils import plot1, plot2, save_model, save_plots, SaveBestModel, get_count
 from running_state import *
 from replay_memory import *
 from GP_step import StepGP
+from logger import Logger
 
 import sys
 sys.path.append('C:/Users/cvcla/my_py_projects/toy_game')
@@ -23,15 +24,13 @@ from wrapper import BasicWrapper
 
 
 def main(args):
-    env = BasicWrapper()
 
-    # Prepare logging
-    log_dir = os.path.join(args.log_dir, args.domain_name + '_' + args.task_name)
-    log_dir = os.path.join(log_dir, datetime.now().strftime('%Y%m%d_%H%M'))
-    os.makedirs(log_dir)
-    with open(os.path.join(log_dir, 'args.json'), 'w') as f:
-        json.dump(vars(args), f)
-    #pprint(vars(args))
+    
+
+
+    env = BasicWrapper()
+    logger.log(args)
+
 
     actor = Actor(env.observation_size, env.action_size, args.n_hidden)
     critic = Critic(env.observation_size, args.n_hidden)  
@@ -62,14 +61,10 @@ def main(args):
 
     # main training
     for episode in range(args.seed_episodes, args.all_episodes):
-        print("episode", episode)
         #start = time.time()         
-        patients, S = env.reset() 
-
-        
+        patients, S = env.reset()         
         done = False
-        total_reward = 0
-        count_iter = 0
+        total_reward = 0; count_iter = 0
         while not done:
             count_iter +=1 # count transitions in a trajectory
             
@@ -81,12 +76,16 @@ def main(args):
 
 
             replay_buffer.push(S, A, R, is_done, mask)
-            if is_done:
-                    done = True                    
-                    break
+            
             S = running_state(S_prime)
-            total_reward += R # summing rewards in a traj 
-            mean_rew = total_reward/count_iter 
+            total_reward += R; total_rewardLR += r_LogReg
+            
+            
+            if is_done:
+                    done = True    
+                    mean_rew = total_reward/count_iter; mean_rewardLR = total_rewardLR/count_iter    
+                    logger.log_episode(mean_rew, mean_rewardLR)             
+                    break
 
         print('episode [%4d/%4d] is collected. Mean reward is %f' % (episode+1, args.all_episodes, mean_rew))
         #print('elasped time for interaction: %.2fs' % (time.time() - start))
@@ -94,6 +93,7 @@ def main(args):
 
         # update model parameters
         start = time.time()
+        total_Ploss = 0; total_Vloss = 0
         for update_step in range(args.collect_interval): #100 steps
             observations, actions, rewards, sampled_done, sampled_mask = \
                 replay_buffer.sample(args.batch_size, args.chunk_length)
@@ -104,11 +104,15 @@ def main(args):
             
             
             policy_loss, val_loss = ppo_agent.update_params_unstacked(embedded_observations, actions, rewards, masks) 
+            total_Ploss += val_loss.detach().numpy(); total_Vloss += policy_loss.detach().numpy()
+            
+            
             # print losses
             if (update_step + 1) % 20 == 0:
                 print('update_step: %3d policy loss: %.5f, value loss: %.5f'% (update_step+1,policy_loss.item(), val_loss.item()))
                 total_update_step = episode * args.collect_interval + update_step
-            
+        # logging mean loss values
+        logger.log_update(total_Ploss, total_Vloss)    
         #print('elasped time for update: %.2fs' % (time.time() - start))
 
         # test to get score without exploration noise
@@ -132,12 +136,14 @@ def main(args):
 
 
     # save learned model parameters
-    torch.save(ppo_agent.actor.state_dict(), os.path.join(log_dir, 'actor.pth'))
-    torch.save(ppo_agent.critic.state_dict(), os.path.join(log_dir, 'critic.pth'))
+    torch.save(ppo_agent.actor.state_dict(), os.path.join(args.log_dir, 'actor.pth'))
+    torch.save(ppo_agent.critic.state_dict(), os.path.join(args.log_dir, 'critic.pth'))
 
 
 if __name__ == "__main__":
 
     args = get_args()
     args.log_dir = "train_1"
-    main(args)
+    logger = Logger(args.log_dir, args.seed)    
+    
+    main(args, logger)
