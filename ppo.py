@@ -183,7 +183,6 @@ class PPO:
         A = A.clone().detach().requires_grad_(True)
 
         for l in range(self.args.chunk_length - 1):
-            print("l", l)
             V_S = self.critic(Variable(S[l]))
             advantages, v_target = self.compute_advantage(V_S, R[l], M[l])
             

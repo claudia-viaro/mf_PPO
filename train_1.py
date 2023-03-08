@@ -44,7 +44,8 @@ def main(args, logger):
     
     ppo_agent = PPO(env, args, actor, critic, MLPBase_model) 
     # collect initial experience with random action
-    for episode in range(args.seed_episodes): #5 episodes
+    for episode in range(args.seed_episodes): #15 episodes
+            start_time = time.time()
             patients, S = env.reset() # S tensorg
             done = False
             while not done:
@@ -135,6 +136,7 @@ def main(args, logger):
     # save learned model parameters
     torch.save(ppo_agent.actor.state_dict(), os.path.join(args.log_dir, 'actor.pth'))
     torch.save(ppo_agent.critic.state_dict(), os.path.join(args.log_dir, 'critic.pth'))
+    logger.log_time(time.time() - start_time)
 
 
 if __name__ == "__main__":
@@ -144,3 +146,5 @@ if __name__ == "__main__":
     logger = Logger(args.log_dir, args.seed)    
     
     main(args, logger)
+    
+    logger.save()
