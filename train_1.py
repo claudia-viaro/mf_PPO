@@ -99,7 +99,6 @@ def main(args, logger):
             masks = torch.as_tensor(sampled_mask).transpose(0, 1)            
             embedded_observations = torch.tensor(observations, dtype=torch.float32).transpose(0, 1)
             
-            
             policy_loss, val_loss = ppo_agent.update_params_unstacked(embedded_observations, actions, rewards, masks) 
             total_Ploss += val_loss.detach().numpy(); total_Vloss += policy_loss.detach().numpy()
             
@@ -108,6 +107,7 @@ def main(args, logger):
             if (update_step + 1) % 20 == 0:
                 print('update_step: %3d policy loss: %.5f, value loss: %.5f'% (update_step+1,policy_loss.item(), val_loss.item()))
                 total_update_step = episode * args.collect_interval + update_step
+                
         # logging mean loss values
         logger.log_update(total_Ploss, total_Vloss)    
         #print('elasped time for update: %.2fs' % (time.time() - start))

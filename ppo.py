@@ -173,7 +173,7 @@ class PPO:
             print("Model's state_dict:")
             for param_tensor in self.actor.state_dict():
                 print(param_tensor, "\t", self.actor.state_dict()[param_tensor].size())
-        return actor_loss, L_vf
+        return actor_loss, L_vf, advantages, clip_factor, v_target, V_S
     
 
     def update_params_unstacked(self, S, A, R, M, print_StateDict = False):
@@ -183,12 +183,14 @@ class PPO:
         A = A.clone().detach().requires_grad_(True)
 
         for l in range(self.args.chunk_length - 1):
-            torch.autograd.set_detect_anomaly(True)
+            print("l", l)
             V_S = self.critic(Variable(S[l]))
             advantages, v_target = self.compute_advantage(V_S, R[l], M[l])
+            
             advantages =  advantages[:, None]
             # loss function for value net
-            L_vf += torch.mean(torch.pow(V_S - Variable(v_target), 2))    
+            L_vf += torch.mean(torch.pow(V_S - Variable(v_target), 2)) 
+             
             # cast into variable
             A_s = Variable(A[l])
             # new log probability of the actions
@@ -208,14 +210,16 @@ class PPO:
             L_cpi = ratio * advantages
             clip_factor = torch.clamp(ratio, 1 - self.args.epsilon, 1 + self.args.epsilon) * advantages
             L_clip += -torch.mean(torch.min(L_cpi, clip_factor))
+            
+            if self.args.chunk_length == 2:
+                print("advantages", advantages.shape, advantages)
 
         
-        L_vf /= (self.args.chunk_length - 1)
+        L_vf /= (self.args.chunk_length - 1) 
         # optimize the critic net
         self.critic_optimizer.zero_grad()
         L_vf.backward(retain_graph=True)
         self.critic_optimizer.step()
-
         L_clip /= (self.args.chunk_length - 1)
         # optimize actor network
         self.actor_optimizer.zero_grad()

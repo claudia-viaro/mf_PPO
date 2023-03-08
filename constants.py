@@ -72,13 +72,13 @@ def get_args():
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument('--value_loss_coef', default=.5, type=float)
     parser.add_argument('--entropy_coef', default=.01, type=float)
-    parser.add_argument('--buffer-capacity', type=int, default=64) # 1000000 64
-    parser.add_argument('-S', '--seed-episodes', type=int, default=5)
+    parser.add_argument('--buffer-capacity', type=int, default=1000) # 1000000 64
+    parser.add_argument('-S', '--seed-episodes', type=int, default=15) # 5
     parser.add_argument('--task-name', type=str, default='run')
     parser.add_argument('--all-episodes', type=int, default=20) # 1000
     parser.add_argument('--action-noise-var', type=float, default=0.3)
-    parser.add_argument('-L', '--chunk-length', type=int, default=10) #50, 10
-    parser.add_argument('-C', '--collect-interval', type=int, default=10) # 100
+    parser.add_argument('-L', '--chunk-length', type=int, default=7) #50, 10
+    parser.add_argument('-C', '--collect-interval', type=int, default=7) # 100
     parser.add_argument(
         '--alpha',
         type=float,

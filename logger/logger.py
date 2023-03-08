@@ -42,7 +42,7 @@ class Logger(object):
         self.metrics["mean_LR_reward"].append(LR_reward)
 
         self.metrics["steps"].append(steps)
-        msg = "episode [%4d/%4d] is collected. Mean Rewards {:.2f}, Mean LR Rewards {:.2f} over %4d transiitons" 
+        msg = "episode [{:.0f}/{:.0f}] is collected. Mean Rewards {:.2f}, Mean LR Rewards {:.2f} over {:.0f} transitions" 
         self.log(msg.format(ep, tot_episodes, reward, LR_reward, steps))
     
     # log at the end of each episode and end of update (losses), number of update steps 
@@ -50,7 +50,7 @@ class Logger(object):
         self.metrics["mean_Plosses"].append(policy_loss)
         self.metrics["mean_Vlosses"].append(value_loss)
 
-        msg = "Update steps / Mean Policy and Value Losses {:.2f}, {:.2f}" 
+        msg = "Update steps / Mean Policy and Value Losses {:.2f}, {:.4f}" 
         self.log(msg.format(policy_loss, value_loss))
         
 
