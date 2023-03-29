@@ -49,10 +49,14 @@ def main(args, logger):
     for episode in range(args.seed_episodes): #15 episodes
             start_time = time.time()
             patients, S = env.reset() # S tensorg
+            A = env.sample_random_action()
+            S_prime, R, pat, s_LogReg, r_LogReg, Xa, Xa_prime, outcome, is_done = env.multi_step(A, S.detach().numpy())
             done = False
             while not done:
+                Xa_pre = Xa_prime
+                Y = outcome
                 A = env.sample_random_action()
-                S_prime, R, pat, s_LogReg, r_LogReg, Xa_pre, Xa_post, outcome, is_done = env.multi_step(A, S.detach().numpy())
+                S_prime, R, pat, Xa_prime, outcome, is_done = env.GPstep_wrapper(A, S.detach().numpy(), Y, Xa_pre, pat[:, 1])
                 # reward is actually the mean of 4 steps
                 mask = 1 - int(is_done)
                 replay_buffer.push(S, A, R, is_done, mask)
@@ -65,17 +69,24 @@ def main(args, logger):
     # main training
     for episode in range(args.seed_episodes, args.all_episodes):
         #start = time.time()         
-        patients, S = env.reset()         
+        patients, S = env.reset()
+        A = ppo_agent.select_best_action(S)
+        A = A.detach().numpy()
+        A += np.random.normal(0, np.sqrt(args.action_noise_var),
+                                    env.action_size)
+        S_prime, R, pat, s_LogReg, r_LogReg, Xa, Xa_prime, outcome, done = env.step(A, S.detach().numpy())         
         done = False
         total_reward = 0; total_rewardLR = 0; count_iter = 0
         while not done:
             count_iter +=1 # count transitions in a trajectory
             
+            Xa_pre = Xa_prime
+            Y = outcome
             A = ppo_agent.select_best_action(S)
             A = A.detach().numpy()
             A += np.random.normal(0, np.sqrt(args.action_noise_var),
                                         env.action_size)
-            S_prime, R, pat, s_LogReg, r_LogReg, Xa_pre, Xa_post, outcome, done = env.step(A, S.detach().numpy())
+            S_prime, R, pat, Xa_prime, outcome, is_done = env.GPstep_wrapper(A, S.detach().numpy(), Y, Xa_pre, pat[:, 1])
 
 
             replay_buffer.push(S, A, R, is_done, mask)
@@ -114,7 +125,7 @@ def main(args, logger):
         # logging mean loss values
         logger.log_update(total_Ploss, total_Vloss)    
         #print('elasped time for update: %.2fs' % (time.time() - start))
-
+        '''
         # test to get score without exploration noise
         if (episode + 1) % args.test_interval == 0:
             start = time.time()
@@ -134,7 +145,7 @@ def main(args, logger):
                     (episode+1, args.all_episodes, total_reward/count_iter_test))
             #print('elapsed time for test: %.2fs' % (time.time() - start))
 
-
+            '''
     # save learned model parameters
     torch.save(ppo_agent.actor.state_dict(), os.path.join(args.log_dir, 'actor.pth'))
     torch.save(ppo_agent.critic.state_dict(), os.path.join(args.log_dir, 'critic.pth'))
