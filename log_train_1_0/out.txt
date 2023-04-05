@@ -1,14 +1,14 @@
-07:36:39
+23:02:44
 Namespace(gamma=0.99, epsilon=0.1, c_learning_rate=0.001, a_learning_rate=0.001, tau=0.97, n_episodes=30, batch_size=10, log_steps=10, save_steps=20, n_hidden=64, actor_save_path='saved/actor_ppo.pth', critic_save_path='saved/critic_ppo.pth', checkpoint_interval=100000.0, out='/tmp/ppo/models/', reset_dir=False, test_interval=10, domain_name='model', log_dir='train_1', config_name='model_update', strategy='information', seed=0, value_loss_coef=0.5, entropy_coef=0.01, buffer_capacity=1000, seed_episodes=15, task_name='run', all_episodes=20, action_noise_var=0.3, chunk_length=7, collect_interval=7, alpha=0.99, max_grad_norm=0.5)
-episode [16/20] is collected. Mean Rewards 0.30, Mean LR Rewards 0.60 over 1 transitions
-Update steps / Mean Policy and Value Losses 77.00, 0.0000
-episode [17/20] is collected. Mean Rewards 0.27, Mean LR Rewards 0.29 over 1 transitions
-Update steps / Mean Policy and Value Losses 74.71, 0.0000
-episode [18/20] is collected. Mean Rewards 0.56, Mean LR Rewards 0.35 over 21 transitions
-Update steps / Mean Policy and Value Losses 75.74, 0.0000
-episode [19/20] is collected. Mean Rewards 0.55, Mean LR Rewards 0.33 over 3 transitions
-Update steps / Mean Policy and Value Losses 68.44, 0.0000
-episode [20/20] is collected. Mean Rewards 0.51, Mean LR Rewards 0.33 over 24 transitions
-Update steps / Mean Policy and Value Losses 71.82, -0.0000
-Episode time 3.49
+episode [16/20] is collected. Mean Rewards 0.37, Mean LR Rewards 0.52 over 3 transitions
+Update steps / Mean Policy and Value Losses 88.92, -0.0001
+episode [17/20] is collected. Mean Rewards 0.54, Mean LR Rewards 0.37 over 32 transitions
+Update steps / Mean Policy and Value Losses 84.10, -0.0000
+episode [18/20] is collected. Mean Rewards 0.56, Mean LR Rewards 0.39 over 11 transitions
+Update steps / Mean Policy and Value Losses 79.89, 0.0000
+episode [19/20] is collected. Mean Rewards 0.30, Mean LR Rewards 0.49 over 4 transitions
+Update steps / Mean Policy and Value Losses 80.84, -0.0000
+episode [20/20] is collected. Mean Rewards 0.53, Mean LR Rewards 0.35 over 24 transitions
+Update steps / Mean Policy and Value Losses 75.13, 0.0000
+Episode time 6.80
 Saved _metrics_

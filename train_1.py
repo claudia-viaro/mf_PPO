@@ -15,7 +15,6 @@ from ppo import PPO
 from utils import plot1, plot2, save_model, save_plots, SaveBestModel, get_count
 from running_state import *
 from replay_memory import *
-from GP_step import StepGP
 from logger.logger import Logger
 
 import sys
@@ -144,6 +143,7 @@ if __name__ == "__main__":
     args = get_args()
     args.log_dir = "train_1"
     logger = Logger(args.log_dir, args.seed)    
+    
     
     main(args, logger)
     

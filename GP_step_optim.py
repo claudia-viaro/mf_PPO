@@ -21,7 +21,7 @@ from scipy.linalg import cholesky, cho_solve, solve
 from sklearn.metrics.pairwise import polynomial_kernel
 
 import sys
-sys.path.append('C:/Users/cvcla/my_py_projects/toy_game')
+sys.path.append('C:/Users/cvcla/my_py_projects/toy_environment')
 from wrapper import BasicWrapper
 sys.path.append('C:/Users/cvcla/my_py_projects/GP_transition')
 from GP_param_train import GaussianProcessClassifierLaplace
@@ -47,80 +47,55 @@ running_state = ZFilter((env.observation_size,), clip=5)
 
 ppo_agent = PPO(env, args, actor, critic, MLPBase_model) 
 
+'''
+# makea single episode
+for episode in range(args.seed_episodes): #15 episodes
+            
+            start_time = time.time()
+            patients, S = env.reset() # S tensorg
+            A = env.sample_random_action()
+            S_prime, R, pat, s_LogReg, r_LogReg, Xa, Xa_prime, outcome, done = env.step(A, S.detach().numpy())  
+            done = False
+            total_reward = 0; total_rewardLR = 0; count_iter = 0
+            while not done:
+                Xa_pre = Xa_prime
+                Y = outcome
+                A = env.sample_random_action()
+                S_prime, R, pat, rho_LogReg, r_LogReg, Xa_prime, outcome, is_done = env.GPstep_wrapper(A, S.detach().numpy(), Y, Xa_pre, pat[:, 1])
+                # reward is actually the mean of 4 steps
+                mask = 1 - int(is_done)
+                replay_buffer.push(S, A, R, is_done, mask)
+                if is_done:
+                    done = True                    
+                    break
+                S = running_state(S_prime)
+                total_reward += R; total_rewardLR += r_LogReg
+            mean_rew = total_reward/count_iter; mean_rewardLR = total_rewardLR/count_iter        
+            print('episodes [%4d/%4d] are collected for experience.' % (args.seed_episodes, args.all_episodes))
+            print('episode [%4d/%4d] is collected. Mean reward is %f' % (episode+1, args.all_episodes, mean_rew))
+
+'''
 patients, S = env.reset() # S tensor
 A = env.sample_random_action()
-S_prime, R, pat, s_LogReg, r_LogReg, Xa_pre, Xa_post, outcome, done = env.multi_step(A, S.detach().numpy())
-Xa_initial = patients[:, 1]
-Xs_initial = patients[:, 0]
-levels = ["L", "M", "H"]
+S_prime, R, pat, s_LogReg, r_LogReg, Xa, Xa_prime, outcome, done = env.step(A, S.detach().numpy())           
+
 
 
 kernel = RBF() + WhiteKernel(noise_level=0.5)
 GPc = GaussianProcessClassifierLaplace(kernel = kernel)
 
-# makea single episode
-for episode in range(args.seed_episodes): #15 episodes
-        start_time = time.time(); count_iter = 0
-        patients, S = env.reset() # S tensor
-        done = False
-        while not done:
-            count_iter +=1 # count transitions in a trajectory/episode
-            A = env.sample_random_action()
-            S_prime, R, pat, s_LogReg, r_LogReg, Xa_pre, Xa_post, outcome, done = env.multi_step(A, S.detach().numpy())
-            mask = 1 - int(done)
-            #replay_buffer.push(S, A, R, done, mask)
-
-            S = running_state(S_prime)
-
-            
-
-
-
-df = pd.DataFrame(data={'Xa_pre': Xa_pre, 'Xa_post':  pat[:, 1], 'states': S_prime, "Outcome": outcome, 'states_old': S})
-df = (df.assign(risk= lambda x: pd.cut(df['states'], 
-                                            bins=[0, 0.4, 0.8, 1],
-                                            labels=levels),
-                risk_old= lambda x: pd.cut(df['states_old'], 
-                                            bins=[0, 0.4, 0.8, 1],
-                                            labels=levels)                            ))
-
 
 #GPc.fit(preprocessing.normalize(Xa_pre.reshape(-1,1), norm='l2'), outcome.reshape(-1,1))
-GPc.fit(Xa_pre.reshape(-1,1), outcome.reshape(-1,1))
-
-mean, var = GPc.post_parameters(Xa_post.reshape(-1,1))
-foc = GPc.FOC_i(Xa_post.reshape(-1,1))
-
-
-def find_min(gaussian_process):
-     
-     values = np.zeros_like(Xa_post.reshape(-1,1))
-     
-     i = 0
-     for i in range(3):
-          trial = np.random.uniform(-4, 4,200)
-          #values = np.column_stack((values, trial))
-          b = gaussian_process.FOC_i(trial.reshape(-1, 1)).squeeze()
-
-          values = np.column_stack((values,b))
-          i += 1
-     values = np.delete(values, 0,1)
-     print("shape grid", np.array(values).shape) 
- 
-     return np.array(values).min(axis=1)
-
-minim = find_min(GPc) 
-#print("minimium", minim)  
-print("min shape", minim.shape)
-print("xapost shape", Xa_post.shape)
+GPc.fit(Xa_prime.reshape(-1,1), outcome.reshape(-1,1))
 
 print("shape bounds", GPc.kernel_.bounds.shape)
-optim_Xa = GPc.fit_Xa()
+#optim_Xa = GPc.fit_Xa()
+bounds = np.array([[-4, 4], [-4, 4]])
+newXA_bound = np.array([-4, 4])
+newXA_bounds = np.vstack((newXA_bound, newXA_bound))
+print(bounds, newXA_bounds)
 
 '''
-
-
-
 import numpy as np
 from matplotlib import pyplot as plt
 from scipy.optimize import minimize

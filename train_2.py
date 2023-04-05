@@ -17,11 +17,10 @@ from ppo import PPO
 from utils import plot1, plot2, save_model, save_plots, SaveBestModel, get_count
 from running_state import *
 from replay_memory import *
-from GP_step import StepGP
 from logger.logger import Logger
 
 import sys
-sys.path.append('C:/Users/cvcla/my_py_projects/toy_game')
+sys.path.append('C:/Users/cvcla/my_py_projects/toy_environment')
 from wrapper import BasicWrapper
 
 
@@ -47,16 +46,21 @@ def main(args, logger):
     ppo_agent = PPO(env, args, actor, critic, MLPBase_model) 
     # collect initial experience with random action
     for episode in range(args.seed_episodes): #15 episodes
+            start = time.time()
+            print('---episode [%4d/%4d] experience' % (episode, args.seed_episodes))
             start_time = time.time()
             patients, S = env.reset() # S tensorg
             A = env.sample_random_action()
             S_prime, R, pat, s_LogReg, r_LogReg, Xa, Xa_prime, outcome, is_done = env.multi_step(A, S.detach().numpy())
             done = False
+            count_iter = 0; total_reward = 0
             while not done:
+                count_iter +=1 # count transitions in a trajectory
+                
                 Xa_pre = Xa_prime
                 Y = outcome
                 A = env.sample_random_action()
-                S_prime, R, pat, Xa_prime, outcome, is_done = env.GPstep_wrapper(A, S.detach().numpy(), Y, Xa_pre, pat[:, 1])
+                S_prime, R, pat, rho_LogReg, r_LogReg, Xa_prime, outcome, is_done = env.GPstep_wrapper(A, S.detach().numpy(), Y, Xa_pre, pat[:, 1])
                 # reward is actually the mean of 4 steps
                 mask = 1 - int(is_done)
                 replay_buffer.push(S, A, R, is_done, mask)
@@ -64,6 +68,9 @@ def main(args, logger):
                     done = True                    
                     break
                 S = running_state(S_prime)
+                total_reward += R
+                logger.log_trajectory(count_iter, R, r_LogReg, S_prime, Xa_prime, outcome, A)
+            print("R experience", total_reward/count_iter, R, count_iter, "it took", time.time()-start)    
     print('episodes [%4d/%4d] are collected for experience.' % (args.seed_episodes, args.all_episodes))
 
     # main training
@@ -86,20 +93,20 @@ def main(args, logger):
             A = A.detach().numpy()
             A += np.random.normal(0, np.sqrt(args.action_noise_var),
                                         env.action_size)
-            S_prime, R, pat, Xa_prime, outcome, is_done = env.GPstep_wrapper(A, S.detach().numpy(), Y, Xa_pre, pat[:, 1])
+            S_prime, R, pat, rho_LogReg, r_LogReg, Xa_prime, outcome, is_done = env.GPstep_wrapper(A, S.detach().numpy(), Y, Xa_pre, pat[:, 1])
 
 
             replay_buffer.push(S, A, R, is_done, mask)
             
             S = running_state(S_prime)
             total_reward += R; total_rewardLR += r_LogReg
-            
+            logger.log_trajectory(count_iter, R, r_LogReg, S_prime, Xa_prime, outcome, A)
             
         mean_rew = total_reward/count_iter; mean_rewardLR = total_rewardLR/count_iter    
         logger.log_episode(episode+1, args.all_episodes, mean_rew, mean_rewardLR, count_iter)             
 
         #print('episode [%4d/%4d] is collected. Mean reward is %f' % (episode+1, args.all_episodes, mean_rew))
-        #print('elasped time for interaction: %.2fs' % (time.time() - start))
+        print('elasped time for interaction: %.2fs' % (time.time() - start))
         
 
         # update model parameters
@@ -114,6 +121,7 @@ def main(args, logger):
             embedded_observations = torch.tensor(observations, dtype=torch.float32).transpose(0, 1)
             
             policy_loss, val_loss = ppo_agent.update_params_unstacked(embedded_observations, actions, rewards, masks) 
+            logger.log_trajectory_update(policy_loss, val_loss)
             total_Ploss += val_loss.detach().numpy(); total_Vloss += policy_loss.detach().numpy()
             
             

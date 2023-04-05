@@ -22,15 +22,23 @@ if not os.path.isdir(results_dir):
 # Plot or not
 plot = True
 
+# load metrics files
+# different json files for each train type
 
-
-
-f = open('log_train_1_0\metrics.json')
-data_log = json.load(f)
+# without GP
+f1 = open('log_train_1_0\metrics.json')
+data_log = json.load(f1)
 for key, value in data_log.items() :
     print (key)
 
+# Closing file
+f1.close()
 
+# with GP
+fgp = open('log_train_2_0\metrics.json')
+data_log = json.load(fgp)
+for key, value in data_log.items() :
+    print (key)
 
 # Closing file
-f.close()
+fgp.close()
