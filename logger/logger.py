@@ -27,14 +27,21 @@ class Logger(object):
         print(string)
 
   
-
     # logging trajectory info, all transitions
-    def log_trajectory(self, reward, LR_reward, critic_loss, actor_loss):
-        self.metrics["e_rewards"].extend(reward)
-        self.metrics["e_rewardsLR"].extend(LR_reward)
+    def log_trajectory(self, steps, reward, LR_reward, S_prime, Xa_prime, outcome, action):
+        self.metrics["t_rewards"].append(reward)
+        self.metrics["t_rewardsLR"].append(LR_reward)
+        self.metrics["steps"].append(steps)
+        self.metrics["t_states"].append(S_prime)
+        self.metrics["t_Xa"].append(Xa_prime)
+        self.metrics["t_outcome"].append(outcome)
+        self.metrics["t_actions"].append(action)
+        
+    def log_trajectory_update(self, policy_loss, value_loss):
 
-        self.metrics["e_Closses"].extend(critic_loss)
-        self.metrics["e_Alosses"].extend(actor_loss)
+        self.metrics["e_Plosses"].append(policy_loss)
+        self.metrics["e_Vlosses"].append(value_loss)
+
 
     # log at the end of each episode, number of steps in an episode
     def log_episode(self, ep, tot_episodes, reward, LR_reward, steps):
@@ -86,7 +93,7 @@ class Logger(object):
         self.metrics = {
             # record losses - mean episode and the entire sequence in an episode
             "e_Plosses": [],
-            "e_Llosses": [],
+            "e_Vlosses": [],
             "mean_Plosses": [],
             "mean_Vlosses": [],
             
@@ -101,6 +108,15 @@ class Logger(object):
             "times": [],
             "reward_stats": [],
             "info_stats": [],
+
+            # record objects in trajectory
+            "t_rewards":[],
+            "t_rewardsLR":[],
+            "steps":[],
+            "t_states":[],
+            "t_Xa":[],
+            "t_outcome":[],
+            "t_actions":[],
 
             # covariates info, perhaps too many
             # think of getting mean/sd per group 
