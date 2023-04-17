@@ -22,15 +22,11 @@ sys.path.append('C:/Users/cvcla/my_py_projects/toy_game')
 from wrapper import BasicWrapper
 
 
-def main(args, logger):
-
-    
+def main(args, logger):   
 
 
     env = BasicWrapper()
     logger.log(args)
-
-
     actor = Actor(env.observation_size, env.action_size, args.n_hidden)
     critic = Critic(env.observation_size, args.n_hidden)  
     MLPBase_model = MLPBase(env.observation_size, env.action_size, env.action_size) #what 3rd arg?
@@ -42,12 +38,16 @@ def main(args, logger):
     running_state = ZFilter((env.observation_size,), clip=5)
     
     ppo_agent = PPO(env, args, actor, critic, MLPBase_model) 
+    
+    
     # collect initial experience with random action
     for episode in range(args.seed_episodes): #15 episodes
             start_time = time.time()
             patients, S = env.reset() # S tensorg
             done = False
+            total_reward = 0; total_rewardLR = 0; count_iter = 0
             while not done:
+                count_iter +=1
                 A = env.sample_random_action()
                 S_prime, R, pat, s_LogReg, r_LogReg, Xa_pre, Xa_post, outcome, is_done = env.multi_step(A, S.detach().numpy())
                 # reward is actually the mean of 4 steps
@@ -57,6 +57,9 @@ def main(args, logger):
                     done = True                    
                     break
                 S = running_state(S_prime)
+                total_reward += R; total_rewardLR += r_LogReg 
+            mean_rew = total_reward/count_iter; mean_rewardLR = total_rewardLR/count_iter    
+            logger.log_episode(episode+1, args.all_episodes, mean_rew, mean_rewardLR, count_iter)    
     print('episodes [%4d/%4d] are collected for experience.' % (args.seed_episodes, args.all_episodes))
 
     # main training
@@ -65,25 +68,19 @@ def main(args, logger):
         patients, S = env.reset()         
         done = False
         total_reward = 0; total_rewardLR = 0; count_iter = 0
-        while not done:
-            count_iter +=1 # count transitions in a trajectory
-            
+        while not done:            
+            count_iter +=1
             A = ppo_agent.select_best_action(S)
             A = A.detach().numpy()
-            A += np.random.normal(0, np.sqrt(args.action_noise_var),
-                                        env.action_size)
+            A += np.random.normal(0, np.sqrt(args.action_noise_var), env.action_size)
             S_prime, R, pat, s_LogReg, r_LogReg, Xa_pre, Xa_post, outcome, done = env.step(A, S.detach().numpy())
-
-
             replay_buffer.push(S, A, R, is_done, mask)
-            
             S = running_state(S_prime)
-            total_reward += R; total_rewardLR += r_LogReg
-            
+            total_reward += R; total_rewardLR += r_LogReg             
             
         mean_rew = total_reward/count_iter; mean_rewardLR = total_rewardLR/count_iter    
         logger.log_episode(episode+1, args.all_episodes, mean_rew, mean_rewardLR, count_iter)             
-
+        #logger.log_episode_list(episode+1, args.all_episodes, mean_rew, mean_rewardLR, count_iter)
         #print('episode [%4d/%4d] is collected. Mean reward is %f' % (episode+1, args.all_episodes, mean_rew))
         #print('elasped time for interaction: %.2fs' % (time.time() - start))
         
@@ -104,7 +101,7 @@ def main(args, logger):
             
             
             # print losses
-            if (update_step + 1) % 20 == 0:
+            if (update_step + 1) % 2 == 0:
                 print('update_step: %3d policy loss: %.5f, value loss: %.5f'% (update_step+1,policy_loss.item(), val_loss.item()))
                 total_update_step = episode * args.collect_interval + update_step
                 
@@ -143,8 +140,5 @@ if __name__ == "__main__":
     args = get_args()
     args.log_dir = "train_1"
     logger = Logger(args.log_dir, args.seed)    
-    
-    
-    main(args, logger)
-    
-    logger.save()
+    main(args, logger)    
+    logger.save(); logger.save_m() #logger.save_csv()

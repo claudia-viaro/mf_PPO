@@ -2,6 +2,7 @@ import os
 import json
 from datetime import datetime
 import pprint
+import csv
 
 
 class Logger(object):
@@ -12,12 +13,16 @@ class Logger(object):
         self.print_path = self.path + "out.txt"
         self.metrics_path = self.path + "metrics.json"
         self.saved_models_paths = self.path + "models.json"
+        self.path_csv = os.path.join(os.path.dirname(__file__), "/output.csv")
 
         os.makedirs(self.path, exist_ok=True)
+        os.makedirs(self.logdir, exist_ok=True)
+        os.makedirs(self.path_csv, exist_ok=True)
         self.metrics = {}
         self.saved_models= {}
         self._init_print()
         self._setup_metrics()
+        self._setup_list()
 
     def log(self, string):
         f = open(self.print_path, "a")
@@ -36,6 +41,8 @@ class Logger(object):
         self.metrics["t_Xa"].append(Xa_prime)
         self.metrics["t_outcome"].append(outcome)
         self.metrics["t_actions"].append(action)
+        msg = "step [{:.0f}] Reward {:.2f}, LR Rewards {:.2f}" 
+        self.log(msg.format(steps, reward, LR_reward))
         
     def log_trajectory_update(self, policy_loss, value_loss):
 
@@ -44,13 +51,13 @@ class Logger(object):
 
 
     # log at the end of each episode, number of steps in an episode
-    def log_episode(self, ep, tot_episodes, reward, LR_reward, steps):
+    def log_episode(self, ep, tot_episodes, reward, LR_reward, steps, time):
         self.metrics["mean_rewards"].append(reward)
         self.metrics["mean_LR_reward"].append(LR_reward)
 
         self.metrics["steps"].append(steps)
-        msg = "episode [{:.0f}/{:.0f}] is collected. Mean Rewards {:.2f}, Mean LR Rewards {:.2f} over {:.0f} transitions" 
-        self.log(msg.format(ep, tot_episodes, reward, LR_reward, steps))
+        msg = "episode [{:.0f}/{:.0f}] is collected. Mean Rewards {:.2f}, Mean LR Rewards {:.2f} over {:.0f} transitions, it took {:.2f} min" 
+        self.log(msg.format(ep, tot_episodes, reward, LR_reward, steps, time/60))
     
     # log at the end of each episode and end of update (losses), number of update steps 
     def log_update(self, policy_loss, value_loss):
@@ -78,9 +85,15 @@ class Logger(object):
 
     def save(self):
         self._save_json(self.metrics_path, self.metrics)
-        self.log("Saved _metrics_")
-
-
+        self.log("Saved metrics")
+    
+    def log_models(self, actor_state_dict, critic_state_dict):
+        self.m_metrics["actor"].append(actor_state_dict)
+        self.m_metrics["critic"].append(critic_state_dict)
+     
+    def save_m(self):
+        self._save_json(self.saved_models_paths, self.saved_models)
+        self.log("Saved _models_")
 
     def _init_print(self):
         f = open(self.print_path, "w")
@@ -90,6 +103,10 @@ class Logger(object):
         f.close()
 
     def _setup_metrics(self):
+        self.m_metrics = {
+            "actor":[],
+            "critic":[]
+        }
         self.metrics = {
             # record losses - mean episode and the entire sequence in an episode
             "e_Plosses": [],
@@ -97,14 +114,14 @@ class Logger(object):
             "mean_Plosses": [],
             "mean_Vlosses": [],
             
-            # record rewards - mean episode and the entire sequence in an episode
+            # record rewards - mean reward in an episode (mean over until done iters)
             "e_rewards": [],
             "e_rewardsLR": [],
             "mean_rewards": [],
             "mean_LR_reward": [],
 
             # others
-            "steps": [],
+            "steps": [], # until done iters in an episode
             "times": [],
             "reward_stats": [],
             "info_stats": [],
@@ -112,7 +129,6 @@ class Logger(object):
             # record objects in trajectory
             "t_rewards":[],
             "t_rewardsLR":[],
-            "steps":[],
             "t_states":[],
             "t_Xa":[],
             "t_outcome":[],
@@ -128,5 +144,34 @@ class Logger(object):
     def _save_json(self, path, obj):
         with open(path, "w") as file:
             json.dump(obj, file)
+    
 
-          
+    def save_csv(self):
+        self.export_to_csv(self.path_csv, self.metrics_list)
+        self.log("Saved metrics in csv")
+
+    def export_to_csv(self, path, obj):
+        with open(path, 'a', newline='') as fp:
+            a= csv.writer(fp, delimiter=';')
+            data = obj
+            a.writerows(data)
+
+    def _setup_list(self):
+        self.metrics_list = {
+            "episode":[],
+            "total_episodes":[],
+            "reward":[],
+            "lr_reward":[],
+            "steps":[]
+        }
+   
+    
+    def log_episode_list(self, ep, tot_episodes, reward, LR_reward, steps):
+        self.metrics_list["episode"].append(ep)
+        self.metrics_list["total_episodes"].append(tot_episodes)
+        self.metrics_list["reward"].append(reward)
+        self.metrics_list["lr_reward"].append(LR_reward)
+        self.metrics_list["steps"].append(steps)
+    
+
+# write a list in train and use export_data

@@ -25,19 +25,12 @@ from wrapper import BasicWrapper
 
 
 def main(args, logger):
-
-    
-
-
     env = BasicWrapper()
     logger.log(args)
-
 
     actor = Actor(env.observation_size, env.action_size, args.n_hidden)
     critic = Critic(env.observation_size, args.n_hidden)  
     MLPBase_model = MLPBase(env.observation_size, env.action_size, env.action_size) #what 3rd arg?
-    #GP_transition = StepGP(args, kernel_choice = linear) 
-    
     replay_buffer = ReplayBuffer(capacity=args.buffer_capacity,
                                  observation_shape= env.observation_size,
                                  action_dim=env.action_size)
@@ -48,12 +41,12 @@ def main(args, logger):
     for episode in range(args.seed_episodes): #15 episodes
             start = time.time()
             print('---episode [%4d/%4d] experience' % (episode, args.seed_episodes))
-            start_time = time.time()
+
             patients, S = env.reset() # S tensorg
             A = env.sample_random_action()
             S_prime, R, pat, s_LogReg, r_LogReg, Xa, Xa_prime, outcome, is_done = env.multi_step(A, S.detach().numpy())
             done = False
-            count_iter = 0; total_reward = 0
+            total_reward = 0; total_rewardLR = 0; count_iter = 0
             while not done:
                 count_iter +=1 # count transitions in a trajectory
                 
@@ -68,19 +61,19 @@ def main(args, logger):
                     done = True                    
                     break
                 S = running_state(S_prime)
-                total_reward += R
+                total_reward += R; total_rewardLR += r_LogReg 
                 logger.log_trajectory(count_iter, R, r_LogReg, S_prime, Xa_prime, outcome, A)
-            print("R experience", total_reward/count_iter, R, count_iter, "it took", time.time()-start)    
+            logger.log_episode(episode+1, args.all_episodes, mean_rew, mean_rewardLR, count_iter, (time.time() - start))             
+    
     print('episodes [%4d/%4d] are collected for experience.' % (args.seed_episodes, args.all_episodes))
 
     # main training
     for episode in range(args.seed_episodes, args.all_episodes):
-        #start = time.time()         
+        start = time.time()         
         patients, S = env.reset()
         A = ppo_agent.select_best_action(S)
         A = A.detach().numpy()
-        A += np.random.normal(0, np.sqrt(args.action_noise_var),
-                                    env.action_size)
+        A += np.random.normal(0, np.sqrt(args.action_noise_var), env.action_size)
         S_prime, R, pat, s_LogReg, r_LogReg, Xa, Xa_prime, outcome, done = env.step(A, S.detach().numpy())         
         done = False
         total_reward = 0; total_rewardLR = 0; count_iter = 0
@@ -103,10 +96,9 @@ def main(args, logger):
             logger.log_trajectory(count_iter, R, r_LogReg, S_prime, Xa_prime, outcome, A)
             
         mean_rew = total_reward/count_iter; mean_rewardLR = total_rewardLR/count_iter    
-        logger.log_episode(episode+1, args.all_episodes, mean_rew, mean_rewardLR, count_iter)             
+        logger.log_episode(episode+1, args.all_episodes, mean_rew, mean_rewardLR, count_iter, (time.time() - start))             
 
         #print('episode [%4d/%4d] is collected. Mean reward is %f' % (episode+1, args.all_episodes, mean_rew))
-        print('elasped time for interaction: %.2fs' % (time.time() - start))
         
 
         # update model parameters
@@ -126,7 +118,7 @@ def main(args, logger):
             
             
             # print losses
-            if (update_step + 1) % 20 == 0:
+            if (update_step + 1) % 2 == 0:
                 print('update_step: %3d policy loss: %.5f, value loss: %.5f'% (update_step+1,policy_loss.item(), val_loss.item()))
                 total_update_step = episode * args.collect_interval + update_step
                 
@@ -157,13 +149,12 @@ def main(args, logger):
     # save learned model parameters
     torch.save(ppo_agent.actor.state_dict(), os.path.join(args.log_dir, 'actor.pth'))
     torch.save(ppo_agent.critic.state_dict(), os.path.join(args.log_dir, 'critic.pth'))
-    logger.log_time(time.time() - start_time)
+    logger.log_time(time.time() - start)
 
 if __name__ == "__main__":
 
     args = get_args()
     args.log_dir = "train_2"
     logger = Logger(args.log_dir, args.seed)    
-    main(args, logger)
-    
+    main(args, logger)    
     logger.save()
