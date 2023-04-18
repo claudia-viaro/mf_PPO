@@ -1,48 +1,16 @@
-09:52:26
+07:31:11
 Namespace(gamma=0.99, epsilon=0.1, c_learning_rate=0.001, a_learning_rate=0.001, tau=0.97, n_episodes=30, batch_size=10, log_steps=10, save_steps=20, n_hidden=64, actor_save_path='saved/actor_ppo.pth', critic_save_path='saved/critic_ppo.pth', checkpoint_interval=100000.0, out='/tmp/ppo/models/', reset_dir=False, test_interval=10, domain_name='model', log_dir='train_2', config_name='model_update', strategy='information', seed=0, value_loss_coef=0.5, entropy_coef=0.01, buffer_capacity=1000, seed_episodes=5, task_name='run', all_episodes=10, action_noise_var=0.3, chunk_length=7, collect_interval=7, alpha=0.99, max_grad_norm=0.5)
-step [1] Reward 0.68, LR Rewards 0.32
-step [2] Reward 0.27, LR Rewards 0.28
-step [3] Reward 0.71, LR Rewards 0.31
-step [4] Reward 0.24, LR Rewards 1.15
-step [5] Reward 0.59, LR Rewards 0.43
-step [6] Reward 0.44, LR Rewards 0.30
-step [7] Reward 0.27, LR Rewards 0.29
-step [8] Reward 0.38, LR Rewards 0.37
-step [9] Reward 0.27, LR Rewards 0.39
-step [10] Reward 0.67, LR Rewards 0.26
-step [11] Reward 0.72, LR Rewards 0.29
-step [12] Reward 0.47, LR Rewards 0.86
-step [13] Reward 0.80, LR Rewards 0.29
-step [14] Reward 0.51, LR Rewards 0.74
-step [15] Reward 0.77, LR Rewards 0.30
-step [16] Reward 0.30, LR Rewards 0.82
-step [17] Reward 0.85, LR Rewards 0.39
-step [18] Reward 0.81, LR Rewards 0.99
-step [19] Reward 0.31, LR Rewards 0.77
-step [20] Reward 0.77, LR Rewards 0.30
-step [21] Reward 0.83, LR Rewards 1.13
-step [22] Reward 0.67, LR Rewards 0.93
-step [23] Reward 0.35, LR Rewards 0.32
-step [24] Reward 0.42, LR Rewards 0.24
-step [25] Reward 0.27, LR Rewards 0.30
-step [26] Reward 0.79, LR Rewards 0.33
-step [27] Reward 0.27, LR Rewards 0.90
-step [28] Reward 0.71, LR Rewards 0.41
-step [29] Reward 0.50, LR Rewards 0.72
-step [30] Reward 0.84, LR Rewards 0.33
-step [31] Reward 0.89, LR Rewards 0.70
-step [32] Reward 0.93, LR Rewards 1.01
-step [33] Reward 1.10, LR Rewards 1.04
-step [34] Reward 0.83, LR Rewards 0.96
-step [35] Reward 0.57, LR Rewards 1.10
-step [36] Reward 0.92, LR Rewards 0.30
-step [37] Reward 0.70, LR Rewards 0.99
-step [38] Reward 0.29, LR Rewards 0.91
-step [39] Reward 0.95, LR Rewards 0.35
-step [40] Reward 0.30, LR Rewards 0.98
-step [41] Reward 0.38, LR Rewards 0.28
-step [42] Reward 1.01, LR Rewards 0.28
-step [43] Reward 0.32, LR Rewards 1.03
-step [44] Reward 1.10, LR Rewards 0.33
-step [45] Reward 0.47, LR Rewards 0.89
-step [46] Reward 0.62, LR Rewards 0.30
+step [1] Reward 0.71, LR Rewards 0.33
+step [2] Reward 0.34, LR Rewards 0.27
+step [3] Reward 0.37, LR Rewards 0.33
+step [4] Reward 0.26, LR Rewards 0.37
+step [5] Reward 0.26, LR Rewards 0.31
+episode [1/10] is collected. Mean Rewards 0.32, Mean LR Rewards 0.27 over 6 transitions, it took 86.97 min
+step [1] Reward 0.58, LR Rewards 0.92
+step [2] Reward 0.33, LR Rewards 0.29
+step [3] Reward 0.31, LR Rewards 0.25
+step [4] Reward 0.33, LR Rewards 0.38
+step [5] Reward 0.25, LR Rewards 0.32
+episode [2/10] is collected. Mean Rewards 0.30, Mean LR Rewards 0.36 over 6 transitions, it took 84.65 min
+step [1] Reward 0.63, LR Rewards 0.59
+step [2] Reward 0.30, LR Rewards 0.81

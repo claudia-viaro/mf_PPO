@@ -4,6 +4,101 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 from constants import *
+import csv
+import os
+
+#--------------------------------------------------------------------------------------------------------------------------------------------------------
+# other functions
+
+def export_to_csv(output_csv_file, data_list):
+
+	with open(output_csv_file, 'a', newline='') as fp:
+		a = csv.writer(fp, delimiter=';')
+		data = [data_list]
+		a.writerows(data)
+
+def get_counts(state):
+    
+    df = pd.DataFrame(data={'states': state})
+    #print(df)
+
+    df = (df.assign(risk= lambda x: pd.cut(df['states'], 
+                                                bins=[0, 0.4, 0.8, 1],
+                                                labels=["L", "M", "H"])))
+
+    count_groups = df.groupby(['risk']).size().reset_index(name='counts')
+    df['Xa'] = np.nan
+    for i in range(0, df.shape[0]):
+        if df['risk'][i] == "L":
+            df['Xa'][i] = np.random.normal(0,1, size=(1,1))
+        elif df['risk'][i] == "M":    
+            df['Xa'][i] = np.random.normal(3,1, size=(1,1))
+        else:  df['Xa'][i] = np.random.normal(6,1, size=(1,1))    
+
+    
+    return count_groups, df['Xa'], df
+
+#--------------------------------------------------------------------------------------------------------------------------------------------------------
+# directory to save plots
+script_dir = os.path.dirname(__file__)
+results_dir = os.path.join(script_dir, 'plots/')
+
+
+if not os.path.isdir(results_dir):
+    os.makedirs(results_dir)
+
+
+#--------------------------------------------------------------------------------------------------------------------------------------------------------
+# plots
+
+def plot_Xa_risk(states, name, episode, iter, directory = results_dir):
+    count_states, df_Xa, df = get_count(states)
+    sns.set(style="darkgrid")
+    figure, axes = plt.subplots(1, 2, sharex=False, figsize=(10,5))
+    figure.suptitle('Episode' + str(episode) + '.iter' + str(iter))
+    axes[0].set_title('Density plot Xa')
+    axes[1].set_title('Histogram risk')
+
+    sample_file_name = name+ str(episode) + "." + str(iter) + ".png" 
+    sns.kdeplot(ax=axes[0], data=df, x="Xa", hue="risk", label = "risk")
+    sns.histplot(ax=axes[1], data= df, x="states", hue="risk", kde=True, label = "risk")
+
+    
+    plt.title("Xa by risk")
+    plt.grid(True)
+    plt.savefig(directory + sample_file_name, dpi=300, bbox_inches='tight')
+    #plt.show()
+    #plt.close(fig)
+
+def plot_datashift(patients0, Xa_post, time):   
+
+    covariates_label = np.array(["Xs", "Xa_start", "Xa_post"])
+    df = pd.DataFrame(data={'Xs':  np.sort(patients0[:, 1]), 'Xa_reset':  np.sort(patients0[:, 2]), 'Xa_post':  np.sort(Xa_post)})
+
+    median_reset = np.median(patients0[:, 2])
+    median_post = np.median(Xa_post)
+
+    for i in range(0, df.shape[1]):
+        # Draw the density plot
+        sns.kdeplot(df.iloc[:, i], fill = True,
+        
+                    label=covariates_label[i])
+        
+    plt.axvline(median_reset, linestyle = '--')
+    plt.axvline(median_post, linestyle = '--', color='g' )
+    # Plot formatting
+
+    plt.legend(title = 'Covariates')
+    plt.title('Covariate shift after ' +str(time)+' transitions') 
+    plt.xlabel('Density Plot of Patients Covariates')
+    plt.ylabel('Density')
+
+    return plt.show()   
+
+
+
+
+#--------------------------------------------------------------------------------------------------------------------------------------------------------
 
 def get_count(state):
 
@@ -46,6 +141,7 @@ def plot_data(statistics):
     plt.show()
 
 def plot1(statistics, results_dir, sample_file_name):
+    sns.set(style="darkgrid")
     x_axis = np.linspace(0, N_EPISODES, N_EPISODES // LOG_STEPS)
     f, axs = plt.subplots(1,3,
                       figsize=(9,5),

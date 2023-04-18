@@ -63,6 +63,7 @@ def main(args, logger):
                 S = running_state(S_prime)
                 total_reward += R; total_rewardLR += r_LogReg 
                 logger.log_trajectory(count_iter, R, r_LogReg, S_prime, Xa_prime, outcome, A)
+            mean_rew = total_reward/count_iter; mean_rewardLR = total_rewardLR/count_iter 
             logger.log_episode(episode+1, args.all_episodes, mean_rew, mean_rewardLR, count_iter, (time.time() - start))             
     
     print('episodes [%4d/%4d] are collected for experience.' % (args.seed_episodes, args.all_episodes))
