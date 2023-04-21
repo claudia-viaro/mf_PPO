@@ -52,19 +52,16 @@ if not os.path.isdir(results_dir):
 # plots
 
 def plot_Xa_risk(states, name, episode, iter, directory = results_dir):
-    count_states, df_Xa, df = get_count(states)
+    count_states, df_Xa, df = get_counts(states)
     sns.set(style="darkgrid")
     figure, axes = plt.subplots(1, 2, sharex=False, figsize=(10,5))
     figure.suptitle('Episode' + str(episode) + '.iter' + str(iter))
     axes[0].set_title('Density plot Xa')
-    axes[1].set_title('Histogram risk')
-
-    sample_file_name = name+ str(episode) + "." + str(iter) + ".png" 
+    axes[1].set_title('Histogram risk - rho')
+    sample_file_name = name+ str(episode) + "."+ str(iter) + ".png" 
+    #sample_file_name = name+ str(episode) + "." + str(iter) + ".png" 
     sns.kdeplot(ax=axes[0], data=df, x="Xa", hue="risk", label = "risk")
-    sns.histplot(ax=axes[1], data= df, x="states", hue="risk", kde=True, label = "risk")
-
-    
-    plt.title("Xa by risk")
+    sns.histplot(ax=axes[1], data= df, x="states", hue="risk", kde=False, label = "risk")
     plt.grid(True)
     plt.savefig(directory + sample_file_name, dpi=300, bbox_inches='tight')
     #plt.show()
@@ -96,7 +93,46 @@ def plot_datashift(patients0, Xa_post, time):
     return plt.show()   
 
 
+def plot_classification(state, Y, patients_df, episode, iter, name, directory = results_dir):
+    # use values from env.step
+    print("Y shape", Y.shape)
+    df = pd.DataFrame(data={'states': state, 'Xa': patients_df[:, 2], 'Y': Y.squeeze(), 'Xs':patients_df[:, 1]})
+    df = (df.assign(risk= lambda x: pd.cut(df['states'], 
+                                                    bins=[0, 0.4, 0.8, 1],
+                                                    labels=["L", "M", "H"])))
+    fig = plt.figure()
+    sns.scatterplot(data=df, x="Xa", y="Xs", hue="risk", style='Y', markers=['o', 's'], s=10)
+    
+    sample_file_name = name + str(episode) + "." + str(iter) + ".png" 
+    plt.title(name + str(episode) + "." + str(iter))
+    plt.grid(True)
+    plt.savefig(directory + sample_file_name, dpi=300, bbox_inches='tight')
 
+def plot_classification_1(state, Y, patients_df, episode, iter, name, directory = results_dir):
+    # use values from env.step
+    df = pd.DataFrame(data={'states': state, 'Xa': patients_df[:, 2], 'Y': Y, 'Xs':patients_df[:, 1]})
+    df = (df.assign(risk= lambda x: pd.cut(df['states'], 
+                                                    bins=[0, 0.4, 0.8, 1],
+                                                    labels=["L", "M", "H"])))
+    fig = plt.figure()
+    colormap = {"L": "purple", "M": "orange", "H": "green"}
+
+    sns.jointplot(
+        data=df,
+        x="Xa",
+        y="Xs",
+        hue="risk",
+        palette=colormap,
+        ec=df["risk"].map(colormap),
+        fc="none",
+        s=10,
+
+    )
+
+    sample_file_name = name + str(episode) + "." + str(iter) + ".png" 
+    plt.title(name + str(episode) + "." + str(iter))
+    plt.grid(True)
+    plt.savefig(directory + sample_file_name, dpi=300, bbox_inches='tight')
 
 #--------------------------------------------------------------------------------------------------------------------------------------------------------
 

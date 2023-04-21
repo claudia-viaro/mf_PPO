@@ -44,35 +44,41 @@ replay_buffer = ReplayBuffer(capacity=args.buffer_capacity,
 running_state = ZFilter((env.observation_size,), clip=5)
 ppo_agent = PPO(env, args, actor, critic, MLPBase_model) 
 
-''''''
+## check one episode -----------------------------------------------------------------------------------------
+print("One episode")
+
 def one_random_run():
     episode = 1
     start = time.time()
     print('---episode [%4d/%4d] experience' % (episode, args.seed_episodes))
 
-    patients, S = env.reset() # S tensor
-    plot_histogram(S, "Histogram_reset", episode=episode, iter=0)
+    patients, S = env.reset() # S tensor, patients (n, 3)
+    plot_Xa_risk(S, "Plot_reset", episode=episode, iter=0)
     A = env.sample_random_action()
-    S_prime, R, pat, s_LogReg, r_LogReg, Xa, Xa_prime, outcome, is_done = env.multi_step(A, S.detach().numpy())
+    S_prime, R, pat, rho_LogReg, r_LogReg, Xa_prime, outcome, is_done = env.multi_step(A, S.detach().numpy(), patients)
     done = False; max_done = 0
     total_reward = 0; total_rewardLR = 0; count_iter = 0
     while max_done <= 2: #not done:
         max_done += 1
         count_iter +=1 # count transitions in a trajectory
         
-        Xa_pre = Xa_prime
-        Y = outcome
+        # link values 
+        Xa_pre = Xa_prime; Y = outcome; S = running_state(S_prime); population = pat
         A = env.sample_random_action()
-        S_prime, R, pat, rho_LogReg, r_LogReg, Xa_prime, outcome, is_done = env.GPstep_wrapper(A, S.detach().numpy(), Y, Xa_pre, pat[:, 1])
+        S_prime, R, pat, rho_LogReg, r_LogReg, Xa_prime, outcome, is_done = env.GPstep_wrapper(A, S.detach().numpy(), Y, Xa_pre)
+        #S_prime, R, pat, rho_LogReg, r_LogReg, Xa_prime, outcome, is_done = env.step(A, S.detach().numpy(), population)
         mask = 1 - int(is_done)
-        replay_buffer.push(S, A, R, is_done, mask)
-        S = running_state(S_prime)
+        replay_buffer.push(S_prime, A, R, is_done, mask)
+        
         total_reward += R; total_rewardLR += r_LogReg 
         print("iter [{:.0f}]: Reward {:.2f}, LR Rewards {:.2f}".format(count_iter, R, r_LogReg)             )
+        print("check na", np.isnan(pat[:, 1]).any(), np.isnan(pat[:, 2]).any())
         export_data_trajectory = [episode, max_done, R, r_LogReg, S, Xa_prime, outcome]
         export_to_csv(RAW_DATA_CSV_1, export_data_trajectory)
         if max_done ==2:
-             plot_Xa_risk(S, "Plot", episode, iter, directory = results_dir)
+            plot_Xa_risk(S_prime, "Plot", episode, max_done, directory = results_dir)
+            plot_classification(S_prime, outcome, pat, episode, max_done, "classification")
+            plot_classification_1(S_prime, outcome, pat, episode, max_done, "joint_plot_classification")
              
     mean_rew = total_reward/count_iter; mean_rewardLR = total_rewardLR/count_iter 
     print("episode [{:.0f}/{:.0f}] is collected. Mean Rewards {:.2f}, Mean LR Rewards {:.2f} over {:.0f} transitions, it took {:.2f} min".format(episode+1, args.all_episodes, mean_rew, mean_rewardLR, count_iter, (time.time() - start))             )

@@ -1,0 +1,3 @@
+11:27:05
+Namespace(gamma=0.99, epsilon=0.1, c_learning_rate=0.001, a_learning_rate=0.001, tau=0.97, n_episodes=30, batch_size=10, log_steps=10, save_steps=20, n_hidden=64, actor_save_path='saved/actor_ppo.pth', critic_save_path='saved/critic_ppo.pth', checkpoint_interval=100000.0, out='/tmp/ppo/models/', reset_dir=False, test_interval=10, domain_name='model', log_dir='train_PPOfix', config_name='model_update', strategy='information', seed=0, value_loss_coef=0.5, entropy_coef=0.01, buffer_capacity=1000, seed_episodes=5, task_name='run', all_episodes=10, action_noise_var=0.3, chunk_length=7, collect_interval=7, alpha=0.99, max_grad_norm=0.5)
+step [1] Reward 0.29, LR Rewards 0.41

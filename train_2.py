@@ -14,7 +14,7 @@ import json
 from constants import *
 from model import Actor, Critic, MLPBase
 from ppo import PPO
-from utils import plot1, plot2, save_model, save_plots, SaveBestModel, get_count
+from utils import *
 from running_state import *
 from replay_memory import *
 from logger.logger import Logger
@@ -22,6 +22,9 @@ from logger.logger import Logger
 import sys
 sys.path.append('C:/Users/cvcla/my_py_projects/toy_environment')
 from wrapper import BasicWrapper
+
+PPOgp_DATA_CSV_1 = os.path.join(os.path.dirname(__file__), "plots/PPOgp_results1.csv")
+PPOgp_DATA_CSV_2 = os.path.join(os.path.dirname(__file__), "plots/PPOgp_results2.csv")
 
 
 def main(args, logger):
@@ -42,29 +45,37 @@ def main(args, logger):
             start = time.time()
             print('---episode [%4d/%4d] experience' % (episode, args.seed_episodes))
 
-            patients, S = env.reset() # S tensorg
+            patients, S = env.reset() # S tensor
+            plot_Xa_risk(S, "Plot_reset", episode=episode, iter=0)
             A = env.sample_random_action()
-            S_prime, R, pat, s_LogReg, r_LogReg, Xa, Xa_prime, outcome, is_done = env.multi_step(A, S.detach().numpy())
+            S_prime, R, pat, s_LogReg, r_LogReg, Xa_prime, outcome, is_done = env.multi_step(A, S.detach().numpy(), patients)
             done = False
             total_reward = 0; total_rewardLR = 0; count_iter = 0
             while not done:
                 count_iter +=1 # count transitions in a trajectory
                 
-                Xa_pre = Xa_prime
-                Y = outcome
+                # link values 
+                Xa_pre = Xa_prime; Y = outcome; S = running_state(S_prime); population = pat
                 A = env.sample_random_action()
-                S_prime, R, pat, rho_LogReg, r_LogReg, Xa_prime, outcome, is_done = env.GPstep_wrapper(A, S.detach().numpy(), Y, Xa_pre, pat[:, 1])
-                # reward is actually the mean of 4 steps
+                S_prime, R, pat, rho_LogReg, r_LogReg, Xa_prime, outcome, is_done = env.GPstep_wrapper(A, S.detach().numpy(), Y, Xa_pre)
                 mask = 1 - int(is_done)
                 replay_buffer.push(S, A, R, is_done, mask)
                 if is_done:
-                    done = True                    
+                    done = True   
+                    plot_Xa_risk(S_prime, "Plot", episode, count_iter, directory = results_dir)
+                    plot_classification(S_prime, outcome, pat, episode, count_iter, "classification")
+                    plot_classification_1(S_prime, outcome, pat, episode, count_iter, "joint_plot_classification")                 
                     break
-                S = running_state(S_prime)
+                
                 total_reward += R; total_rewardLR += r_LogReg 
                 logger.log_trajectory(count_iter, R, r_LogReg, S_prime, Xa_prime, outcome, A)
+                export_data_trajectory = [episode, count_iter, R, r_LogReg, S, Xa_prime, outcome]
+                export_to_csv(PPOgp_DATA_CSV_1, export_data_trajectory)
+
             mean_rew = total_reward/count_iter; mean_rewardLR = total_rewardLR/count_iter 
-            logger.log_episode(episode+1, args.all_episodes, mean_rew, mean_rewardLR, count_iter, (time.time() - start))             
+            logger.log_episode(episode+1, args.all_episodes, mean_rew, mean_rewardLR, count_iter, (time.time() - start))  
+            export_data_episode = [episode, mean_rew, mean_rewardLR, count_iter]
+            export_to_csv(PPOgp_DATA_CSV_2, export_data_episode)           
     
     print('episodes [%4d/%4d] are collected for experience.' % (args.seed_episodes, args.all_episodes))
 
@@ -72,6 +83,7 @@ def main(args, logger):
     for episode in range(args.seed_episodes, args.all_episodes):
         start = time.time()         
         patients, S = env.reset()
+        plot_Xa_risk(S, "Plot_reset", episode=episode, iter=0)
         A = ppo_agent.select_best_action(S)
         A = A.detach().numpy()
         A += np.random.normal(0, np.sqrt(args.action_noise_var), env.action_size)
@@ -88,22 +100,32 @@ def main(args, logger):
             A += np.random.normal(0, np.sqrt(args.action_noise_var),
                                         env.action_size)
             S_prime, R, pat, rho_LogReg, r_LogReg, Xa_prime, outcome, is_done = env.GPstep_wrapper(A, S.detach().numpy(), Y, Xa_pre, pat[:, 1])
-
-
+            mask = 1 - int(is_done)
             replay_buffer.push(S, A, R, is_done, mask)
             
             S = running_state(S_prime)
             total_reward += R; total_rewardLR += r_LogReg
             logger.log_trajectory(count_iter, R, r_LogReg, S_prime, Xa_prime, outcome, A)
+            export_data_trajectory = [episode, count_iter, R, r_LogReg, S, Xa_prime, outcome]
+            export_to_csv(PPOgp_DATA_CSV_1, export_data_trajectory)
+
+            if is_done:
+                done = True   
+                plot_Xa_risk(S_prime, "Plot", episode, count_iter, directory = results_dir)
+                plot_classification(S_prime, outcome, pat, episode, count_iter, "classification")
+                plot_classification_1(S_prime, outcome, pat, episode, count_iter, "joint_plot_classification")                 
+                break
             
         mean_rew = total_reward/count_iter; mean_rewardLR = total_rewardLR/count_iter    
-        logger.log_episode(episode+1, args.all_episodes, mean_rew, mean_rewardLR, count_iter, (time.time() - start))             
+        logger.log_episode(episode+1, args.all_episodes, mean_rew, mean_rewardLR, count_iter, (time.time() - start))   
+        export_data_episode = [episode, mean_rew, mean_rewardLR, count_iter]
+        export_to_csv(PPOgp_DATA_CSV_2, export_data_episode)           
 
-        #print('episode [%4d/%4d] is collected. Mean reward is %f' % (episode+1, args.all_episodes, mean_rew))
+        print('episode [%4d/%4d] is collected. Mean reward is %f' % (episode+1, args.all_episodes, mean_rew))
         
 
         # update model parameters
-        start = time.time()
+        start_update = time.time()
         total_Ploss = 0; total_Vloss = 0
         for update_step in range(args.collect_interval): #100 steps
             observations, actions, rewards, sampled_done, sampled_mask = \
@@ -150,12 +172,12 @@ def main(args, logger):
     # save learned model parameters
     torch.save(ppo_agent.actor.state_dict(), os.path.join(args.log_dir, 'actor.pth'))
     torch.save(ppo_agent.critic.state_dict(), os.path.join(args.log_dir, 'critic.pth'))
-    logger.log_time(time.time() - start)
+    logger.log_time(time.time() - start_update)
 
 if __name__ == "__main__":
 
     args = get_args()
-    args.log_dir = "train_2"
+    args.log_dir = "train_PPOgp"
     logger = Logger(args.log_dir, args.seed)    
     main(args, logger)    
     logger.save()

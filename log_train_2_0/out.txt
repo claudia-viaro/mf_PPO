@@ -14,3 +14,4 @@ step [5] Reward 0.25, LR Rewards 0.32
 episode [2/10] is collected. Mean Rewards 0.30, Mean LR Rewards 0.36 over 6 transitions, it took 84.65 min
 step [1] Reward 0.63, LR Rewards 0.59
 step [2] Reward 0.30, LR Rewards 0.81
+step [3] Reward 0.42, LR Rewards 0.28
